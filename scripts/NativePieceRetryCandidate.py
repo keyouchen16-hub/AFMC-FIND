@@ -20,7 +20,7 @@ def choose_piece_retry(now, target, queue, peers, observations, recent_rates=Non
         if now-since < 8 or remaining < 512 or block_rate >= 4096 or remaining/max(1,block_rate) <= 4:
             continue
         recent_rates = recent_rates or {}
-        faster = any(p.ip != endpoint and max(p.payload_down_speed,recent_rates.get(p.ip,0)) > max(16384, peer.payload_down_speed*3)
+        faster = any(p.ip != endpoint and max(p.payload_down_speed,recent_rates.get(p.ip,0) if p.download_queue_length == 0 else 0) > max(16384, block_rate*3)
             and not (p.flags & lt.peer_info.remote_choked)
             and target < len(p.pieces) and p.pieces[target] for p in peers)
         if faster:
@@ -50,6 +50,10 @@ def _retry_update(self):
     alive = {p.ip for p in peers}
     self._native_retry_rates = {k:[s for s in v if now-s[0] <= 30] for k,v in self._native_retry_rates.items() if k in alive}
     for p in peers:
+        previous_total = self._native_retry_totals.get(p.ip,p.total_download)
+        if p.total_download < previous_total:
+            self._native_retry_rates.pop(p.ip,None)
+            self._native_retry_observations = {k:v for k,v in self._native_retry_observations.items() if k[2] != p.ip}
         if p.total_download > self._native_retry_totals.get(p.ip,p.total_download) and p.payload_down_speed > 16384:
             self._native_retry_rates.setdefault(p.ip,[]).append((now,p.payload_down_speed))
     self._native_retry_totals = {p.ip:p.total_download for p in peers}

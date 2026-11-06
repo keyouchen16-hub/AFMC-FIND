@@ -111,7 +111,7 @@
  		// should be guaranteed to be available for download
 --- a/src/torrent.cpp
 +++ b/src/torrent.cpp
-@@ -5239,6 +5239,50 @@
+@@ -5239,6 +5239,47 @@
  	}
  
  #ifndef TORRENT_DISABLE_STREAMING
@@ -124,20 +124,8 @@
 +		for (auto* p : m_connections)
 +			if (p->remote() == endpoint && !p->is_disconnecting()) { slow = p; break; }
 +		if (!slow || slow->afmc_avoided_piece() == piece) return 0;
-+		peer_connection* fast = nullptr;
-+		int rate = std::max(16 * 1024, slow->statistics().download_payload_rate() * 3);
-+		for (auto* p : m_connections)
-+		{
-+			if (p == slow || !p->can_request_time_critical() || !p->has_piece(piece)
-+				|| p->afmc_avoided_piece() == piece) continue;
-+			int const r = p->afmc_retry_rate();
-+			if (r > rate) { fast = p; rate = r; }
-+		}
-+		// Never withdraw from the only observed supplier.
-+		if (!fast) return 0;
 +		auto pending = slow->download_queue();
 +		int count = 0;
-+		auto const incoming = slow->downloading_piece_progress();
 +		for (auto const& item : pending)
 +		{
 +			auto const block = item.block;
@@ -145,16 +133,25 @@
 +			if (block.piece_index != piece || item.not_wanted || item.timed_out
 +				|| picker().is_downloaded(block) || picker().is_finished(block)
 +				|| picker().num_peers(block) != 1) continue;
-+			auto const& dq = fast->download_queue();
-+			auto const& rq = fast->request_queue();
-+			if (std::find_if(dq.begin(), dq.end(), aux::has_block(block)) != dq.end()
-+				|| std::find_if(rq.begin(), rq.end(), aux::has_block(block)) != rq.end()) continue;
-+			if (fast->add_request(block, peer_connection::time_critical | peer_connection::busy)) ++count;
++			peer_connection* fast = nullptr;
++			int rate = 16 * 1024;
++			for (auto* p : m_connections)
++			{
++				if (p == slow || !p->can_request_time_critical() || !p->has_piece(piece)
++					|| p->afmc_avoided_piece() == piece) continue;
++				auto const& dq = p->download_queue();
++				auto const& rq = p->request_queue();
++				if (std::find_if(dq.begin(), dq.end(), aux::has_block(block)) != dq.end()
++					|| std::find_if(rq.begin(), rq.end(), aux::has_block(block)) != rq.end()) continue;
++				int const r = p->afmc_retry_rate();
++				if (r > rate) { fast = p; rate = r; }
++			}
++			if (fast && fast->add_request(block, peer_connection::time_critical | peer_connection::busy))
++			{ ++count; fast->send_block_requests(); }
 +		}
 +		if (count > 0)
 +		{
 +			slow->afmc_avoid_piece(piece, std::max(1000, std::min(cooldown_ms, 10000)));
-+			fast->send_block_requests();
 +		}
 +		return count;
 +	}

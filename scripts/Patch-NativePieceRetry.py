@@ -14,8 +14,6 @@ def edit(name, old, new):
     path = SRC / name
     original = BACKUP / name
     text = texts.setdefault(name, (original if original.exists() else path).read_text(encoding='utf-8'))
-    if new in text:
-        return
     assert text.count(old) == 1, (name, text.count(old))
     original.parent.mkdir(parents=True, exist_ok=True)
     if not original.exists():
@@ -147,6 +145,41 @@ edit('src/torrent.cpp',
      '\t\t\t\t|| picker().num_peers(block) != 1) continue;')
 edit('CMakeLists.txt', 'target_compile_options(torrent-rasterbar PUBLIC /EHsc)',
      'target_compile_options(torrent-rasterbar PUBLIC /EHsc /MP4)')
+edit('src/torrent.cpp', '''\t\tpeer_connection* fast = nullptr;
+\t\tint rate = std::max(16 * 1024, slow->statistics().download_payload_rate() * 3);
+\t\tfor (auto* p : m_connections)
+\t\t{
+\t\t\tif (p == slow || !p->can_request_time_critical() || !p->has_piece(piece)
+\t\t\t\t|| p->afmc_avoided_piece() == piece) continue;
+\t\t\tint const r = p->afmc_retry_rate();
+\t\t\tif (r > rate) { fast = p; rate = r; }
+\t\t}
+\t\t// Never withdraw from the only observed supplier.
+\t\tif (!fast) return 0;
+''', '')
+edit('src/torrent.cpp', '''\t\t\tauto const& dq = fast->download_queue();
+\t\t\tauto const& rq = fast->request_queue();
+\t\t\tif (std::find_if(dq.begin(), dq.end(), aux::has_block(block)) != dq.end()
+\t\t\t\t|| std::find_if(rq.begin(), rq.end(), aux::has_block(block)) != rq.end()) continue;
+\t\t\tif (fast->add_request(block, peer_connection::time_critical | peer_connection::busy)) ++count;''',
+'''\t\t\tpeer_connection* fast = nullptr;
+\t\t\tint rate = 16 * 1024;
+\t\t\tfor (auto* p : m_connections)
+\t\t\t{
+\t\t\t\tif (p == slow || !p->can_request_time_critical() || !p->has_piece(piece)
+\t\t\t\t\t|| p->afmc_avoided_piece() == piece) continue;
+\t\t\t\tauto const& dq = p->download_queue();
+\t\t\t\tauto const& rq = p->request_queue();
+\t\t\t\tif (std::find_if(dq.begin(), dq.end(), aux::has_block(block)) != dq.end()
+\t\t\t\t\t|| std::find_if(rq.begin(), rq.end(), aux::has_block(block)) != rq.end()) continue;
+\t\t\t\tint const r = p->afmc_retry_rate();
+\t\t\t\tif (r > rate) { fast = p; rate = r; }
+\t\t\t}
+\t\t\tif (fast && fast->add_request(block, peer_connection::time_critical | peer_connection::busy))
+\t\t\t{ ++count; fast->send_block_requests(); }''')
+edit('src/torrent.cpp',
+     '\t\t\tslow->afmc_avoid_piece(piece, std::max(1000, std::min(cooldown_ms, 10000)));\n\t\t\tfast->send_block_requests();',
+     '\t\t\tslow->afmc_avoid_piece(piece, std::max(1000, std::min(cooldown_ms, 10000)));')
 
 patch = []
 for original in sorted(BACKUP.rglob('*')):

@@ -19,8 +19,10 @@ def payload(index, offset, length):
     return data[offset:offset+length]
 
 class Peer:
-    def __init__(self, name, infohash, events, clock, slow=False):
+    def __init__(self, name, infohash, events, clock, slow=False, dribble=False, fault=None):
         self.name, self.infohash, self.events, self.clock, self.slow = name, infohash, events, clock, slow
+        self.dribble = dribble
+        self.fault = fault
         self.listener = socket.socket()
         self.listener.bind(('127.0.0.1', 0))
         self.listener.listen(1)
@@ -61,6 +63,7 @@ class Peer:
             self.connected = True
             self.event('connected')
             queue, incoming, serial = [], b'', 0
+            fragment, fragment_next = None, 0
             next_send = time.monotonic()
             while not self.stop.is_set():
                 ready, _, _ = select.select([connection], [], [], .01)
@@ -88,15 +91,38 @@ class Peer:
                             heapq.heapify(queue)
                         else:
                             self.event('request', piece=index, block=begin//BLOCK)
-                            delay = 20 if self.slow and index == 0 and begin == 0 else .02
-                            if delay == 20:
+                            held = self.slow and index == 0 and begin == 0
+                            delay = (.4 if self.dribble else 20) if held else .02
+                            if held:
                                 self.held.set()
                             serial += 1
                             heapq.heappush(queue, (time.monotonic()+delay, serial, index, begin, size))
                 now = time.monotonic()
+                if fragment is not None:
+                    if now >= fragment_next:
+                        connection.sendall(fragment[:128])
+                        fragment = fragment[128:] or None
+                        fragment_next = now + .2
+                    continue  # Complete this BT message before sending another.
                 if queue and queue[0][0] <= now and now >= next_send:
                     _, _, index, begin, size = heapq.heappop(queue)
-                    connection.sendall(struct.pack('!IBII', size+9, 7, index, begin)+payload(index, begin, size))
+                    if self.dribble and index == 0 and begin == 0:
+                        connection.sendall(struct.pack('!IBII',size+9,7,index,begin)+payload(index,begin,1024))
+                        fragment = payload(index,begin+1024,size-1024)
+                        fragment_next = now + .2
+                        self.event('partial',piece=index,block=0)
+                        continue
+                    body = payload(index,begin,size)
+                    if self.fault and index == 0 and begin == 0:
+                        fault,self.fault = self.fault,None
+                        if fault == 'partial-disconnect':
+                            connection.sendall(struct.pack('!IBII',size+9,7,index,begin)+body[:size//2])
+                            self.event('partial-disconnect',piece=index,block=0)
+                            return
+                        if fault == 'corrupt-once':
+                            body = bytes([body[0]^1])+body[1:]
+                            self.event('corrupt-once',piece=index,block=0)
+                    connection.sendall(struct.pack('!IBII', size+9, 7, index, begin)+body)
                     self.event('sent', piece=index, block=begin//BLOCK)
                     next_send = now + (0 if self.slow else size/(4*1024*1024))
         except (OSError, AssertionError, ValueError) as error:
@@ -138,7 +164,8 @@ def run(mode):
     worker = module.Worker({'token': secrets.token_hex(32), 'cache': str(cache), 'input': str(torrent)})
     events, errors, result = [], [], {}
     clock = time.monotonic()
-    a, b = Peer('slow', infohash, events, clock, True), Peer('fast', infohash, events, clock)
+    fault = {'native-partial-fallback':'partial-disconnect','native-corrupt':'corrupt-once'}.get(mode)
+    a, b = Peer('slow', infohash, events, clock, True, mode=='native-dribble'), Peer('fast', infohash, events, clock,fault=fault)
     def update():
         try:
             while not worker.stop.wait(.03):
@@ -171,7 +198,7 @@ def run(mode):
             if rates.get(b.port, 0) > max(16384, rates.get(a.port, 0)*3):
                 break
             time.sleep(.03)
-        result['fixtureVersion'] = 4
+        result['fixtureVersion'] = 6
         result['preRetryRates'] = {('slow' if p.ip[1] == a.port else 'fast'): p.payload_down_speed
                                   for p in worker.handle.get_peer_info()}
         if mode == 'priority-reset':
@@ -190,7 +217,9 @@ def run(mode):
             time.sleep(.3)
             worker.handle.set_piece_deadline(0, 0)
             worker.handle.reset_piece_deadline(31)
-        elif mode in ('native-reassign', 'native-fallback', 'native-only-supplier'):
+        elif mode.startswith('native-'):
+            result['partialAtRetry'] = next((p.downloading_progress for p in worker.handle.get_peer_info()
+                if p.ip[1]==a.port and p.downloading_piece_index==0 and p.downloading_block_index==0),0)
             result['nativeReassigned'] = worker.handle.afmc_retry_piece(0, ('127.0.0.1', a.port), 8000)
             result['nativeRepeat'] = worker.handle.afmc_retry_piece(0, ('127.0.0.1', a.port), 8000)
             result['invalidPiece'] = worker.handle.afmc_retry_piece(-1, ('127.0.0.1', a.port), 8000)
@@ -199,7 +228,7 @@ def run(mode):
                 b.close()
         elif mode != 'baseline':
             raise ValueError('unknown mode')
-        reader.join(timeout=26)
+        reader.join(timeout=40 if mode == 'native-corrupt' else 26)
         result.update(mode=mode, hashFailures=worker.hash_failures,
             retainedConnections=a.connected and b.connected, errors=errors,
             delayedBlockCancelled=any(e['peer']=='slow' and e['action']=='cancel' and e.get('piece')==0 and e.get('block')==0 for e in events),
@@ -220,17 +249,22 @@ def run(mode):
     evidence.write_text(json.dumps(result, indent=2), encoding='utf-8')
     print(json.dumps({k:v for k,v in result.items() if k != 'events'}))
     # Native session may still own files: retain this small isolated fixture.
-    assert result.get('bytesMatch') and not errors and worker.hash_failures == 0
-    if mode == 'native-reassign':
+    assert result.get('bytesMatch') and not errors
+    assert worker.hash_failures >= 1 if mode == 'native-corrupt' else worker.hash_failures == 0
+    if mode in ('native-reassign','native-dribble'):
         assert result['nativeReassigned'] == 1
         assert result['nativeRepeat'] == result['invalidPiece'] == result['unknownPeer'] == 0
         assert result['retainedConnections']
         assert result['delayedBlockRequestedFromFast']
         requests = [e for e in events if e['peer']=='slow' and e['action']=='request' and e.get('piece')==0 and e.get('block')==0]
         assert len(requests) == 1
-    if mode == 'native-fallback':
+        if mode == 'native-dribble':
+            assert 0 < result['partialAtRetry'] < BLOCK
+    if mode in ('native-fallback','native-partial-fallback'):
         assert result['nativeReassigned'] == 1
         assert result['readSeconds'] < 22 and result['bytesMatch']
+        if mode == 'native-partial-fallback':
+            assert any(e['action']=='partial-disconnect' for e in events)
     if mode == 'native-only-supplier':
         assert result['nativeReassigned'] == 0 and not result['delayedBlockCancelled']
         assert result['readSeconds'] < 22
@@ -238,5 +272,5 @@ def run(mode):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', choices=['baseline', 'priority-reset', 'deadline', 'cancel-reassign', 'native-reassign', 'native-fallback', 'native-only-supplier'])
+    parser.add_argument('mode', choices=['baseline', 'priority-reset', 'deadline', 'cancel-reassign', 'native-reassign', 'native-fallback', 'native-only-supplier', 'native-dribble', 'native-partial-fallback', 'native-corrupt'])
     run(parser.parse_args().mode)

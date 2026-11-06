@@ -2,6 +2,8 @@
 
 新增 Check-PieceReassignment.py（真实loopback BT wire，不是电影）、Patch-NativePieceRetry.py、Build-NativeStreamCandidate.ps1、NativePieceRetryCandidate.py、Check-NativePieceRetry.py、Prepare-NativeRetryBench.ps1、Summarize-NativeRetry.py。原始结果留 docs/evidence/piece-reassignment 本机；Check-RepositoryUpload.py 检查实际 Git 文件列表并只报告敏感匹配位置，不显示值。
 
+夹具 v6 增加 `native-partial-fallback` 和 `native-corrupt`，验证真实半块断连与错误分片重新校验。汇总脚本对从未起播的样本将停顿统计写为 null，不把未播放误报为零卡顿。Git 换行检查沿用仓库原有 autocrlf 配置；临时关闭转换的检查曾将 CRLF 误报为尾空白，正常配置复核通过，未做批量换行修改。
+
 # 2026-11-06：必要分片追踪工具
 
 scripts/Prepare-PieceTrace.ps1 创建拒绝覆盖的隔离副本；可分别启用 DeadlineScheduler、ShortBlockTimeout、RelaxEndGame，缺省只追踪。PieceTrace.py 输出匿名必要块与供应时序；PieceDeadlineCandidate.py 为隔离窗口算法；Check-PieceDeadlineCandidate.py 验证 5 个边界。Summarize-PieceTrace.py 可读进行中快照；Summarize-PieceScheduling.ps1 拒绝 Running 结果，汇总已结束轮次及结果/worker SHA256。AFMC_PIECE_TRACE 指定追踪文件，AFMC_COMPARE_OUTPUT/SECONDS 控制现有真实解码基准。见 PIECE_SCHEDULING_0821.md。

@@ -11,7 +11,7 @@ exec(compile(source, 'NativePieceRetryCandidate.py', 'exec'), scope)
 choose = scope['choose_piece_retry']
 
 def peer(endpoint, speed, has=True, choked=False):
-    return types.SimpleNamespace(ip=endpoint, payload_down_speed=speed, pieces=[has], flags=int(choked))
+    return types.SimpleNamespace(ip=endpoint, payload_down_speed=speed, pieces=[has], flags=int(choked),download_queue_length=0)
 
 slow = peer(('192.0.2.1', 1), 20)
 fast = peer(('192.0.2.2', 2), 100000)

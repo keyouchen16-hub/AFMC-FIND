@@ -26,7 +26,11 @@ for p in sorted(root.glob('*/afmc.json')):
     supply=None
     if len(after)>1:
         supply=round((after[-1]['Status']['Downloaded']-after[0]['Status']['Downloaded'])/(after[-1]['Seconds']-after[0]['Seconds'])/1024,2)
-    results.append({'run':p.parent.name,**{k:r.get(k) for k in ('MetadataSeconds','FirstDecodedSeconds','PostStartObservedSeconds','PostStartObservationComplete','StallSeconds','LongestStallSeconds','Outcome')},
+    metrics={k:r.get(k) for k in ('MetadataSeconds','FirstDecodedSeconds','PostStartObservedSeconds','PostStartObservationComplete','StallSeconds','LongestStallSeconds','Outcome')}
+    if r.get('FirstDecodedSeconds') is None:
+        metrics['StallSeconds']=None
+        metrics['LongestStallSeconds']=None
+    results.append({'run':p.parent.name,**metrics,
         'postStartAverageKiBps':supply,'retryBlocks':max((x.get('retryBlocks',0) for x in rows),default=0),
         'hashFailures':max((x.get('hashFailures',0) for x in rows),default=0),
         'longestRequiredWaits':sorted(waits,key=lambda x:x['duration'],reverse=True)[:4]})

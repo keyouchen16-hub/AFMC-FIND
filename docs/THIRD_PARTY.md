@@ -49,3 +49,7 @@ Microsoft.Playwright 1.64.1（Apache-2.0），固定在 PackageReference 与锁�
 - 组件运行于应用自有独立进程，无系统 Python 安装、无系统服务；下载组件约 32 MiB，实际发布包增量尚未测量。原有 WPF、LibVLCSharp、libVLC、MonoTorrent 依赖和许可仍保留。
 - imageio-ffmpeg 0.6.0 仅在开发虚拟环境生成原创 MKV 验收样本，不随应用分发。
 
+## 未发布的原生分片实验（2026-11-07）
+
+`scripts/native/libtorrent-2.0.15-afmc-piece-retry.patch` 修改上游 v2.0.15 的请求调度和 Python 绑定；上游完整许可保留于 [libtorrent-LICENSE.txt](libtorrent-LICENSE.txt)。实验构建使用 Boost 1.87.0、CPython 3.12.10 开发文件和 CPython 官方 OpenSSL 3.0.16.2 依赖，固定来源见 [实验记录](PIECE_REASSIGNMENT_0821.md)。依赖源码和生成二进制仅保存在忽略的 `.tools` 目录，未上传或替换正式组件。若后续发布此候选，还须更新组件摘要清单、依赖通知并通过安装验收。
+
