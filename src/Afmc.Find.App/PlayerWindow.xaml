@@ -1,0 +1,57 @@
+<Window x:Class="Afmc.Find.App.PlayerWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+ Title="AFMC FIND · 播放器" Width="980" Height="660" MinWidth="760" MinHeight="480" WindowStartupLocation="CenterOwner" Style="{StaticResource {x:Type Window}}" Icon="Assets/afmc-find.ico" PreviewKeyDown="PlayerKeyDown">
+ <Window.Resources><Style x:Key="TransportAction" TargetType="Button" BasedOn="{StaticResource CompactButton}"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontSize" Value="12"/></Style>
+  <Style x:Key="WindowAction" TargetType="Button"><Setter Property="Width" Value="32"/><Setter Property="Height" Value="28"/><Setter Property="FontSize" Value="14"/><Setter Property="Foreground" Value="#ECEFF4"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="face" Background="Transparent" CornerRadius="5"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="face" Property="Background" Value="#38FFFFFF"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+<Style x:Key="PlayerSliderStyle" TargetType="Slider"><Setter Property="IsMoveToPointEnabled" Value="True"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+   <Grid Height="22" Background="Transparent"><Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}">
+    <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="3" CornerRadius="1.5" Background="{StaticResource Accent}"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+    <Track.Thumb><Thumb Width="12" Height="12"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Fill="#F4F2F0"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+    <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="3" CornerRadius="1.5" Background="#507D8793"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+   </Track></Grid><ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger></ControlTemplate.Triggers>
+  </ControlTemplate></Setter.Value></Setter></Style>
+ </Window.Resources>
+ <Grid x:Name="PlayerLayout" Margin="12,4,12,8">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid x:Name="InputRow" Visibility="Collapsed" Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <TextBox x:Name="AddressBox" Style="{StaticResource CompactInput}" Height="36" FontSize="13" MaxLength="16000" AutomationProperties.Name="磁力或视频直链" ToolTip="粘贴 magnet 磁力链接或 HTTP(S) 视频直链" KeyDown="AddressKeyDown"/>
+   <TextBlock Text="粘贴磁力链接或视频直链" FontSize="13" Foreground="{StaticResource Muted}" Margin="14,0" VerticalAlignment="Center" IsHitTestVisible="False"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=AddressBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+   <Button x:Name="LoadButton" Grid.Column="1" Content="播放链接" Style="{StaticResource Primary}" Height="36" Padding="14,0" Margin="8,0,0,0" Click="LoadClick"/>
+   <Button x:Name="TorrentButton" Grid.Column="2" Content="打开种子" Style="{StaticResource CompactButton}" Height="36" Padding="14,0" Margin="8,0,0,0" Click="TorrentClick"/>
+  </Grid>
+  <DockPanel x:Name="FileRow" Grid.Row="1" Margin="0,0,0,10" Visibility="Collapsed"><TextBlock Text="视频文件" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource Muted}" FontSize="12"/><ComboBox x:Name="VideoFiles" Style="{StaticResource CompactSelect}" DisplayMemberPath="Path" SelectionChanged="FileChanged" AutomationProperties.Name="选择视频文件"/></DockPanel>
+  <Border x:Name="CanvasFrame" Grid.Row="2" Background="#FF090B0E" CornerRadius="8" BorderBrush="#25FFFFFF" BorderThickness="1">
+   <Grid>
+    <vlc:VideoView x:Name="VideoSurface" Visibility="Visible" Background="Black">
+     <Grid x:Name="VideoOverlay" Background="#01000000" PreviewMouseMove="OverlayMove" MouseLeftButtonDown="OverlayDown" PreviewKeyDown="PlayerKeyDown" Focusable="True">
+      <StackPanel x:Name="OverlayTop" VerticalAlignment="Top" Margin="14,10">
+       <Grid x:Name="WindowControls" Height="32" Background="#B0090B0E" MouseLeftButtonDown="WindowDrag">
+        <TextBlock x:Name="PlayerDragArea" Text="" Background="Transparent" Margin="10,0,120,0" AutomationProperties.Name="拖动播放器"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+         <Button Content="−" Style="{StaticResource WindowAction}" Click="MinimizePlayer" AutomationProperties.Name="最小化播放器"/>
+         <Button Content="□" Style="{StaticResource WindowAction}" Click="FullscreenClick" AutomationProperties.Name="最大化播放器"/>
+         <Button Content="×" Style="{StaticResource WindowAction}" Click="CloseOverlayPlayer" AutomationProperties.Name="关闭播放器"/>
+        </StackPanel>
+       </Grid>
+      </StackPanel>
+      <Image x:Name="PlayerIdleLogo" Source="Assets/afmc-find.png" Width="72" Height="90" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False" RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="AFMC FIND 标志"/>
+      <TextBlock x:Name="Placeholder" Text="" Foreground="#88939E" FontSize="22" TextAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/><Border x:Name="FloatingBar" Width="500" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="12,0,12,24" Padding="15,6,15,9" CornerRadius="15" Background="#DB202228" BorderBrush="#42FFFFFF" BorderThickness="1"><StackPanel x:Name="FloatingContent"/></Border>
+      <Border x:Name="SubtitlePanel" HorizontalAlignment="Right" VerticalAlignment="Top" MaxHeight="295" Width="225" Margin="12" Padding="14" CornerRadius="12" Background="#EE202228" BorderBrush="#42FFFFFF" BorderThickness="1" Visibility="Collapsed">
+       <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><DockPanel><Button Content="×" DockPanel.Dock="Right" Click="CloseSubtitles" AutomationProperties.Name="收起字幕面板"/><TextBlock Text="字幕" FontSize="17" VerticalAlignment="Center"/></DockPanel><StackPanel x:Name="SubtitleChoices"/></StackPanel></ScrollViewer>
+      </Border>
+     </Grid>
+    </vlc:VideoView>
+   </Grid>
+  </Border>
+  <Grid x:Name="Transport" Grid.Row="3" Margin="0,4,0,0"><Grid.Resources><Style TargetType="Button"><Setter Property="Foreground" Value="White"/><Setter Property="Padding" Value="7,3"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="face" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="face" Property="Background" Value="#38FFFFFF"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></Grid.Resources><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <Slider Style="{StaticResource PlayerSliderStyle}" x:Name="SeekBar" Minimum="0" Maximum="1000" Value="0" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,12,0" PreviewMouseLeftButtonDown="SeekDown" PreviewMouseLeftButtonUp="SeekUp" PreviewKeyUp="SeekKeyUp" AutomationProperties.Name="播放进度"/>
+    <TextBlock x:Name="TimeLabel" Grid.Column="1" Text="00:00 / 00:00" Foreground="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center"/>
+   </Grid>
+   <DockPanel Grid.Row="1" Margin="0,3,0,0" LastChildFill="True">
+    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="音量" Foreground="#FFE2E2E6" FontSize="11" VerticalAlignment="Center"/><Slider Style="{StaticResource PlayerSliderStyle}" x:Name="VolumeBar" Minimum="0" Maximum="100" Value="80" Width="50" Margin="6,0" ValueChanged="VolumeChanged" AutomationProperties.Name="音量"/></StackPanel>
+    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button x:Name="SubtitleButton" Content="字幕" IsEnabled="False" Click="SubtitleClick"/><Button x:Name="FullscreenButton" Content="⛶" AutomationProperties.Name="全屏" ToolTip="全屏 (F11)" Click="FullscreenClick"/></StackPanel>
+    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal"><Button Content="−10" AutomationProperties.Name="后退十秒" Click="BackTen"/><Button x:Name="PauseButton" Content="暂停" IsEnabled="False" Click="PauseClick"/><Button Content="+10" AutomationProperties.Name="前进十秒" Click="ForwardTen"/><Button x:Name="StopButton" Content="■" AutomationProperties.Name="停止" IsEnabled="False" Click="StopClick"/><Button x:Name="SourceToggle" Content="打开" AutomationProperties.Name="打开资源" Click="ToggleSourceClick"/></StackPanel>
+   </DockPanel> </Grid>
+  <TextBlock x:Name="PlayerStatus" Grid.Row="4" Text="打开资源开始播放" Foreground="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"/>
+ </Grid>
+</Window>

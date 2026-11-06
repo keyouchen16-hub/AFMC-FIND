@@ -1,0 +1,16 @@
+from pathlib import Path
+import shutil
+app=Path('src/Afmc.Find.App')
+shutil.copy2(r'C:\Users\CHENKEYOU\Desktop\05_临时整理\6dd26714b53b8fb396d5ffe4160f52c0.png',app/'Assets/author-mark.png')
+shutil.copy2(r'C:\Users\CHENKEYOU\Desktop\05_临时整理\白色喷漆涂鸦：SAINTS FORMY FAMILY.png',app/'Assets/family-mark.png')
+p=app/'Afmc.Find.App.csproj';s=p.read_text(encoding='utf-8-sig').replace('0.6.4','0.6.5').replace('<Resource Include="Assets/afmc-find.png"/>','<Resource Include="Assets/afmc-find.png"/><Resource Include="Assets/author-mark.png"/><Resource Include="Assets/family-mark.png"/>');p.write_text(s,encoding='utf-8')
+p=app/'MainWindow.xaml';s=p.read_text(encoding='utf-8-sig').replace('AFMC FIND 0.6.4 · 磨砂工作台','AFMC FIND').replace('<TextBlock x:Name="MaterialText"','<TextBlock Text="{x:Static local:ProductInfo.VersionLabel}" FontSize="11" Foreground="{StaticResource Muted}" Margin="10,0,0,0" VerticalAlignment="Center"/><TextBlock x:Name="MaterialText"')
+s=s.replace('Padding="16,6"><TextBlock x:Name="StatusText"','Padding="16,0"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock VerticalAlignment="Center" Margin="0,0,16,0" x:Name="StatusText"')
+s=s.replace('TextTrimming="CharacterEllipsis"/></Border>\n </Grid>', 'TextTrimming="CharacterEllipsis"/><Button x:Name="FeedbackButton" Grid.Column="1" Click="FeedbackClick" ToolTip="反馈与联系" AutomationProperties.Name="反馈与联系" Background="Transparent" BorderThickness="0" Padding="8,1" Margin="0,1"><Image Source="Assets/author-mark.png" Width="62" Height="27" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/></Button></Grid></Border>\n </Grid>')
+p.write_text(s,encoding='utf-8')
+p=app/'MainWindow.xaml.cs';s=p.read_text(encoding='utf-8-sig').replace('InitializeComponent(); settings', 'InitializeComponent(); Title=ProductInfo.Title; settings').replace('private void PreferencesClick', 'private void FeedbackClick(object sender,RoutedEventArgs e)=>new FeedbackWindow {Owner=this}.ShowDialog();\n    private void PreferencesClick');s=s.replace('backdrop.Attach(); };','backdrop.Attach(); UpdateExit.Attach(this); };');p.write_text(s,encoding='utf-8')
+p=app/'PreferencesWindow.xaml';s=p.read_text(encoding='utf-8-sig').replace('xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"','xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Afmc.Find.App"').replace('Text="AFMC FIND"','Text="{x:Static local:ProductInfo.Title}"');s=s.replace('<StackPanel Margin="0,0,0,20">','<Image Grid.Row="0" Source="Assets/family-mark.png" Width="104" Height="82" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.23" IsHitTestVisible="False" RenderOptions.BitmapScalingMode="HighQuality"/><StackPanel Margin="0,0,116,20">');p.write_text(s,encoding='utf-8')
+p=app/'TrayController.cs';s=p.read_text(encoding='utf-8-sig').replace('Text="AFMC FIND"','Text=ProductInfo.Title');p.write_text(s,encoding='utf-8')
+for f in ['scripts/Build.ps1','scripts/Package.ps1','scripts/Verify-Release.ps1','scripts/Verify-Glass.ps1']:
+ p=Path(f);p.write_text(p.read_text(encoding='utf-8-sig').replace('0.6.4','0.6.5').replace('v064','v065'),encoding='utf-8')
+Path('docs/evidence/v065').mkdir(exist_ok=True)

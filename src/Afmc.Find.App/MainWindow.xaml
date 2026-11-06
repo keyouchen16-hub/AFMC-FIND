@@ -1,0 +1,246 @@
+<Window x:Class="Afmc.Find.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Afmc.Find.App"
+        Style="{StaticResource {x:Type Window}}" Icon="Assets/afmc-find.ico" Title="AFMC FIND"
+        Width="1320" Height="860" MinWidth="1060" MinHeight="650" WindowStyle="None"
+        WindowStartupLocation="CenterScreen" PreviewKeyDown="WindowKeyDown"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+  <Window.Resources>
+    <Style x:Key="SortHeader" TargetType="Button">
+      <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{StaticResource Muted}"/>
+      <Setter Property="Padding" Value="0,0,16,0"/><Setter Property="Height" Value="32"/>
+      <Setter Property="Cursor" Value="Hand"/><Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="Surface" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Right" VerticalAlignment="Center"/></Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#12FFFFFF"/></Trigger>
+          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{StaticResource Accent}"/><Setter TargetName="Surface" Property="BorderThickness" Value="1"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="CaptionButton" TargetType="Button">
+      <Setter Property="FontSize" Value="10"/><Setter Property="Foreground" Value="#CBD0D7"/>
+      <Setter Property="Width" Value="44"/><Setter Property="Height" Value="46"/><Setter Property="Padding" Value="0"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="HitSurface" Background="Transparent"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="HitSurface" Property="Background" Value="#18FFFFFF"/></Trigger>
+          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="HitSurface" Property="BorderBrush" Value="{StaticResource Accent}"/><Setter TargetName="HitSurface" Property="BorderThickness" Value="1"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="SearchInput" TargetType="TextBox" BasedOn="{StaticResource CompactInput}">
+      <Setter Property="FontSize" Value="15"/><Setter Property="Background" Value="#D014171B"/><Setter Property="BorderBrush" Value="#283E434C"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox">
+        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12">
+          <Grid>
+            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="16,0,0,0" IsHitTestVisible="False"/>
+            <ScrollViewer x:Name="PART_ContentHost" Margin="44,0,70,0" VerticalAlignment="Center"/>
+            <TextBlock Text="Ctrl K" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" IsHitTestVisible="False"/>
+          </Grid>
+        </Border>
+        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Accent}"/></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource CompactButton}">
+      <Setter Property="Height" Value="32"/><Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="10,0"/>
+      <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style x:Key="SearchCancel" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+      <Setter Property="Visibility" Value="Collapsed"/><Setter Property="Height" Value="48"/>
+      <Style.Triggers><Trigger Property="IsEnabled" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger></Style.Triggers>
+    </Style>
+    <Style x:Key="VersionsAction" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+      <Setter Property="Visibility" Value="Collapsed"/>
+      <Style.Triggers><Trigger Property="IsEnabled" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger></Style.Triggers>
+    </Style>
+    <Style x:Key="ResultItemStyle" TargetType="ListBoxItem">
+      <Setter Property="Padding" Value="12,8"/><Setter Property="MinHeight" Value="76"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+        <Grid Background="Transparent" Margin="0,1">
+          <Border x:Name="RowSurface" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+          <Border x:Name="SelectionMark" Width="3" Height="28" CornerRadius="1.5" HorizontalAlignment="Left" Background="Transparent"/>
+          <Border x:Name="FocusMark" BorderThickness="1" BorderBrush="Transparent" CornerRadius="8" IsHitTestVisible="False"/>
+        </Grid>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="RowSurface" Property="Background" Value="#0BFFFFFF"/></Trigger>
+          <Trigger Property="IsSelected" Value="True"><Setter TargetName="RowSurface" Property="Background" Value="#22262C"/><Setter TargetName="SelectionMark" Property="Background" Value="{StaticResource Accent}"/></Trigger>
+          <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FocusMark" Property="BorderBrush" Value="#A0F43F70"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PlaybackStateText" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Muted}"/><Setter Property="FontSize" Value="12"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding PlaybackLabel}" Value="近期起播成功"><Setter Property="Foreground" Value="#ADD8BE"/></DataTrigger>
+        <DataTrigger Binding="{Binding PlaybackLabel}" Value="起播未确认"><Setter Property="Foreground" Value="#D9C098"/></DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+  <WindowChrome.WindowChrome><WindowChrome CaptionHeight="48" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False"/></WindowChrome.WindowChrome>
+  <Border x:Name="RootSurface" Background="#EB15171B" BorderBrush="#26FFFFFF" BorderThickness="1">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Background="#301F2329" BorderBrush="#0CFFFFFF" BorderThickness="0,0,0,1">
+        <Grid Height="48">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center">
+            <Image x:Name="BrandLogo" Source="Assets/afmc-find.png" Width="22" Height="22" Margin="0,0,10,0" AutomationProperties.Name="AFMC FIND 标志"/>
+            <TextBlock Text="AFMC FIND" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="{x:Static local:ProductInfo.VersionLabel}" FontSize="11" Foreground="{StaticResource Muted}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="MaterialText" Visibility="Collapsed"/><TextBlock x:Name="PageTitle" Text="搜索" Visibility="Collapsed"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,18,0" WindowChrome.IsHitTestVisibleInChrome="True">
+            <Button x:Name="SearchNav" Style="{StaticResource NavigationTab}" Tag="selected" Content="搜索" Click="ShowSearch"/>
+            <Button x:Name="SourcesNav" Style="{StaticResource NavigationTab}" Margin="4,0,0,0" Content="搜索源" Click="ShowSources"/>
+            <Border Width="1" Height="14" Background="#20FFFFFF" Margin="14,0"/>
+            <Button x:Name="PlayerEntryButton" Style="{StaticResource NavigationTab}" Content="播放器" Click="PlayerEntryClick" Margin="0,0,6,0"/>
+            <Button x:Name="PreferencesButton" Style="{StaticResource SettingsIconButton}" Content="&#xE713;" ToolTip="设置" AutomationProperties.Name="设置" Click="PreferencesClick"/>
+          </StackPanel>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+            <Button Style="{StaticResource CaptionButton}" x:Name="MinimizeWindowButton" AutomationProperties.AutomationId="MinimizeWindowButton" AutomationProperties.Name="最小化" Content="&#xE921;" FontFamily="Segoe MDL2 Assets" ToolTip="最小化" Click="MinimizeWindowClick"/>
+            <Button Style="{StaticResource CaptionButton}" x:Name="MaximizeWindowButton" AutomationProperties.AutomationId="MaximizeWindowButton" AutomationProperties.Name="最大化或还原" Content="&#xE922;" FontFamily="Segoe MDL2 Assets" ToolTip="最大化 / 还原" Click="MaximizeWindowClick"/>
+            <Button Style="{StaticResource CaptionButton}" x:Name="CloseWindowButton" AutomationProperties.AutomationId="CloseWindowButton" AutomationProperties.Name="关闭窗口" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" ToolTip="关闭" Click="CloseWindowClick"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+      <Border DockPanel.Dock="Bottom" Background="Transparent" BorderBrush="#0CFFFFFF" BorderThickness="0,1,0,0" Padding="24,0" Height="36">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <TextBlock x:Name="StatusText" AutomationProperties.AutomationId="StatusText" Text="就绪 · 输入名称开始搜索" FontSize="12" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+          <Button Grid.Column="1" x:Name="RetryButton" Content="重试失败来源" Style="{StaticResource QuietButton}" Height="28" Padding="8,0" FontSize="12" Margin="0,0,16,0" Visibility="Collapsed" IsEnabled="False" Click="RetryClick"/>
+          <Button Grid.Column="2" x:Name="FeedbackButton" FocusVisualStyle="{x:Null}" Click="FeedbackClick" ToolTip="反馈与联系" AutomationProperties.Name="反馈与联系" Background="Transparent" BorderThickness="0" Padding="4,0">
+            <Button.Template><ControlTemplate TargetType="Button"><Grid Background="Transparent"><ContentPresenter x:Name="Mark" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.75"/><Border x:Name="Underline" Height="1" VerticalAlignment="Bottom" Background="Transparent" Margin="4,0,4,3"/></Grid><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Mark" Property="Opacity" Value="1"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Mark" Property="Opacity" Value="1"/><Setter TargetName="Underline" Property="Background" Value="{StaticResource Accent}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template>
+            <Image Source="Assets/author-mark.png" Width="62" Height="27" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+          </Button>
+        </Grid>
+      </Border>
+      <Grid Margin="24,18,24,16">
+        <Grid x:Name="SearchView">
+          <Grid.RowDefinitions><RowDefinition Height="48"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <Grid>
+              <TextBox x:Name="QueryBox" AutomationProperties.AutomationId="QueryBox" AutomationProperties.Name="搜索关键词" Style="{StaticResource SearchInput}" Height="48" MaxLength="200" KeyDown="QueryKeyDown" ToolTip="搜索资源名称、年份或版本 · Enter 搜索，Ctrl+K 聚焦"/>
+              <TextBlock Text="搜索电影、音乐、图书或软件" FontSize="14" Foreground="{StaticResource Muted}" Margin="44,0,70,0" VerticalAlignment="Center" IsHitTestVisible="False"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=QueryBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+            </Grid>
+            <Button x:Name="SearchButton" AutomationProperties.AutomationId="SearchButton" Grid.Column="1" Content="搜索资源" Height="48" MinWidth="108" Padding="18,0" Style="{StaticResource Primary}" Margin="10,0,0,0" Click="SearchClick"/>
+            <Button x:Name="CancelButton" Grid.Column="2" Style="{StaticResource SearchCancel}" Content="取消" Padding="12,0" Margin="8,0,0,0" Click="CancelClick" IsEnabled="False"/>
+          </Grid>
+          <Grid Grid.Row="1" Margin="0,16,0,14">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Button x:Name="BackToGroupsButton" Content="← 返回资源" Style="{StaticResource QuietButton}" Visibility="Collapsed" Click="BackToGroupsClick" Margin="0,0,8,0"/>
+              <ComboBox x:Name="CategoryBox" AutomationProperties.AutomationId="CategoryBox" AutomationProperties.Name="资源类型" Style="{StaticResource CompactSelect}" Width="126" SelectedIndex="0" SelectionChanged="IntentChanged" ToolTip="按来源和文件名筛选资源类型">
+                <ComboBoxItem Content="全部类型"/><ComboBoxItem Content="视频"/><ComboBoxItem Content="音乐"/><ComboBoxItem Content="文档 / 书籍"/><ComboBoxItem Content="软件"/><ComboBoxItem Content="游戏"/><ComboBoxItem Content="数据集"/>
+              </ComboBox>
+              <ComboBox x:Name="ResolutionBox" AutomationProperties.AutomationId="ResolutionBox" AutomationProperties.Name="分辨率" Style="{StaticResource CompactSelect}" Width="126" Margin="8,0,0,0" SelectedIndex="0" IsEnabled="False" SelectionChanged="IntentChanged" ToolTip="仅视频启用；指定分辨率会排除未知规格">
+                <ComboBoxItem Content="不限分辨率"/><ComboBoxItem Content="720p"/><ComboBoxItem Content="1080p"/><ComboBoxItem Content="2160p / 4K"/><ComboBoxItem Content="4320p / 8K"/>
+              </ComboBox>
+              <Button x:Name="FilterOptionsButton" Content="筛选" Style="{StaticResource QuietButton}" Margin="8,0,0,0" Click="FilterOptionsClick"/>
+              <CheckBox x:Name="VerifiedPlaybackOnly" Content="仅看已验证起播" FontSize="12" Margin="12,0,0,0" VerticalAlignment="Center" Checked="VerifiedPlaybackChanged" Unchecked="VerifiedPlaybackChanged" ToolTip="仅显示最近实际解码成功的结果；不代表全片流畅。"/>
+              <Button x:Name="ApplyHealthOrderButton" Content="更新排序" Style="{StaticResource QuietButton}" Visibility="Collapsed" Margin="8,0,0,0" Click="ApplyHealthOrder" ToolTip="已更新播放检测状态；点击后按新的证据排序。"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0,16,0" MaxWidth="230">
+              <TextBlock x:Name="CountText" Text="准备搜索" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="AvailabilityText" Visibility="Collapsed" FontSize="12" Foreground="{StaticResource Muted}" Text="尚未验证播放" HorizontalAlignment="Right" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" ToolTip="实际解码多帧且播放时钟推进才算近期起播成功；不保证全片流畅或完整下载。来源做种数和收到数据均不等于已起播。"/>
+            </StackPanel>
+            <Button Grid.Column="3" x:Name="SortButton" Content="排序：综合推荐 ↓" Style="{StaticResource QuietButton}" VerticalAlignment="Center" ToolTip="切换排序；点击表头可直接排序，再次点击反向" Click="SortClick"/>
+          </Grid>
+          <Grid Grid.Row="2" x:Name="ResultsWorkspace">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition x:Name="DetailGap" Width="0"/><ColumnDefinition x:Name="DetailColumn" Width="0"/></Grid.ColumnDefinitions>
+            <Grid>
+              <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition/></Grid.RowDefinitions>
+              <Grid x:Name="ResultHeaders" Margin="12,0,21,0">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="84"/><ColumnDefinition Width="88"/><ColumnDefinition Width="100"/><ColumnDefinition Width="64"/><ColumnDefinition Width="20"/></Grid.ColumnDefinitions>
+                <TextBlock Text="资源" Foreground="{StaticResource Muted}" VerticalAlignment="Center" FontSize="12"/>
+                <TextBlock Grid.Column="1" Text="播放状态" Foreground="{StaticResource Muted}" VerticalAlignment="Center" FontSize="12"/>
+                <Button Grid.Column="2" x:Name="SizeSortHeader" Content="大小" Tag="5" Style="{StaticResource SortHeader}" Click="HeaderSortClick" ToolTip="按文件大小排序；未知值置底"/>
+                <Button Grid.Column="3" x:Name="PublishedSortHeader" Content="发布" Tag="2" Style="{StaticResource SortHeader}" Click="HeaderSortClick" ToolTip="按发布时间排序；未知值置底"/>
+                <Button Grid.Column="4" x:Name="SeedsSortHeader" Content="做种" Tag="1" Style="{StaticResource SortHeader}" Click="HeaderSortClick" ToolTip="按来源报告的做种数排序；不代表已验证可播"/>
+              </Grid>
+              <ListBox x:Name="ResultsList" Grid.Row="1" AutomationProperties.AutomationId="ResultsList" IsSynchronizedWithCurrentItem="False" ItemContainerStyle="{StaticResource ResultItemStyle}" SelectionChanged="ResultSelected" MouseDoubleClick="ResultDoubleClick" PreviewMouseRightButtonUp="ResultRightClick" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListBox.Template><ControlTemplate TargetType="ListBox"><ScrollViewer Focusable="False" CanContentScroll="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible"><ItemsPresenter/></ScrollViewer></ControlTemplate></ListBox.Template>
+                <ListBox.ItemTemplate><DataTemplate>
+                  <Grid x:Name="ResultRow">
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="84"/><ColumnDefinition Width="88"/><ColumnDefinition Width="100"/><ColumnDefinition Width="64"/><ColumnDefinition Width="20"/></Grid.ColumnDefinitions>
+                    <Grid Margin="0,0,12,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                      <local:ThumbnailView Url="{Binding ThumbnailUrl}" ToolTip="{Binding ThumbnailLabel}" Width="36" Height="50" Margin="0,0,12,0" HorizontalAlignment="Left"/>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ResultName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
+                        <DockPanel Margin="0,5,0,0" LastChildFill="True">
+                          <TextBlock DockPanel.Dock="Right" Text="{Binding VersionLabel}" FontSize="12" Foreground="#C4B6C0" Margin="8,0,0,0" ToolTip="按明确片名、年份和类别归组；当前数值与状态属于排序靠前的版本，选中后可展开比较。"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding VersionLabel}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+                          <TextBlock Text="{Binding SourceAndSpecs}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Muted}" FontSize="12" ToolTip="{Binding MatchReason}"/>
+                        </DockPanel>
+                      </StackPanel>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="{Binding PlaybackLabel}" Style="{StaticResource PlaybackStateText}" ToolTip="{Binding MatchReason}" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="ResultSize" Grid.Column="2" Text="{Binding SizeText}" FontSize="12" Margin="0,0,16,0" VerticalAlignment="Center" HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular"/>
+                    <TextBlock x:Name="ResultPublished" Grid.Column="3" Text="{Binding PublishedText}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,16,0" VerticalAlignment="Center" HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular"/>
+                    <TextBlock x:Name="ResultSeeds" Grid.Column="4" Text="{Binding SeedsText}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,16,0" VerticalAlignment="Center" HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular"/>
+                  </Grid>
+                </DataTemplate></ListBox.ItemTemplate>
+              </ListBox>
+              <TextBlock x:Name="EmptyText" Grid.Row="1" Text="搜索你想找的资源&#10;&#10;电影、音乐、图书与软件" Foreground="{StaticResource Muted}" TextAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin="24" FontSize="14" LineHeight="24" IsHitTestVisible="False"/>
+            </Grid>
+            <Border x:Name="DetailPanel" Grid.Column="2" Visibility="Collapsed" Background="#B01B1E23" BorderBrush="#12FFFFFF" BorderThickness="1" CornerRadius="12" Padding="18,14,18,18">
+              <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="32"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Grid><TextBlock Text="资源详情" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/><Button x:Name="DetailCloseButton" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="32" Height="32" Padding="0" HorizontalAlignment="Right" Style="{StaticResource QuietButton}" Click="CloseDetailClick" ToolTip="收起详情" AutomationProperties.Name="收起详情"/></Grid>
+                <ScrollViewer x:Name="DetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,12,0,0">
+                  <StackPanel Margin="0,0,4,0">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                      <local:ThumbnailView Url="{Binding SelectedItem.ThumbnailUrl, ElementName=ResultsList}" ToolTip="{Binding SelectedItem.ThumbnailLabel, ElementName=ResultsList}" Width="72" Height="102" Margin="0,0,12,0"/>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock x:Name="DetailTitle" Text="选择一条资源" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="84" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><TextBlock x:Name="DetailCategory" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
+                    </Grid>
+                    <TextBlock x:Name="DetailPlaybackState" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,16,0,0" TextWrapping="Wrap" LineHeight="20"/>
+                    <TextBlock x:Name="DetailFields" Text="" TextWrapping="Wrap" FontSize="13" LineHeight="25" Foreground="{StaticResource Muted}" Margin="0,14,0,16"/>
+                    <Expander Header="完整文件名" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,0,0,12" IsExpanded="False"><TextBlock x:Name="DetailFileName" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource Muted}" LineHeight="20" Margin="0,8,0,0"/></Expander>
+                    <Border BorderBrush="#18FFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,4"><StackPanel>
+                      <TextBlock Text="来源说明" FontSize="12" Foreground="{StaticResource Muted}"/>
+                      <TextBlock x:Name="DetailSourceEvidence" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" LineHeight="20" Margin="0,6,0,8"/>
+                      <WrapPanel><Button x:Name="PageButton" Content="打开来源页面" Style="{StaticResource QuietButton}" Click="PageClick" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="CopyInfoButton" Content="复制资源信息" Style="{StaticResource QuietButton}" Click="CopyInfoClick" IsEnabled="False"/></WrapPanel>
+                    </StackPanel></Border>
+                  </StackPanel>
+                </ScrollViewer>
+                <StackPanel x:Name="DetailActions" Grid.Row="2" Margin="0,14,0,0">
+                  <Button x:Name="VersionsButton" Content="暂无可比较版本" Style="{StaticResource VersionsAction}" IsEnabled="False" Click="VersionsClick" Margin="0,0,0,8"/>
+                  <Button x:Name="PlayButton" Content="试播" Style="{StaticResource Primary}" Click="PlayClick" IsEnabled="False" Height="42" Padding="12,0" Margin="0,0,0,8"/>
+                  <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions><Button x:Name="OpenButton" Content="用下载软件打开" Style="{StaticResource CompactButton}" Click="OpenClick" IsEnabled="False" Height="38" Padding="4,0" FontSize="12"/><Button x:Name="CopyButton" Grid.Column="2" Content="复制磁力链接" Style="{StaticResource CompactButton}" Click="CopyClick" IsEnabled="False" Height="38" Padding="4,0" FontSize="12"/></Grid>
+                  <TextBlock x:Name="HandoffHint" Text="" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,10,0,0" LineHeight="19"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+          <!-- Retained command targets: reached through contextual actions, not duplicated on screen. -->
+          <StackPanel Visibility="Collapsed"><TextBox x:Name="FilterBox" TextChanged="FilterChanged"/><Button x:Name="DensityButton" Content="标准密度" Click="DensityClick"/><Button x:Name="HistoryButton" Click="HistoryClick"/><Button x:Name="FavoritesButton" Click="FavoritesClick"/><Button x:Name="HealthButton" Click="SourceHealthClick"/><Button x:Name="FavoriteButton" Content="收藏资源" Click="FavoriteClick" IsEnabled="False"/><TextBlock x:Name="SourceStatus" TextTrimming="CharacterEllipsis"/></StackPanel>
+        </Grid>
+        <Grid x:Name="SourcesView" Visibility="Collapsed">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <StackPanel Margin="0,4,0,18"><TextBlock Text="搜索源" FontSize="22" FontWeight="SemiBold"/><TextBlock Text="让合适的来源，加入你的搜索。" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/></StackPanel>
+          <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SourceWebsiteBox" Style="{StaticResource CompactInput}" Height="42" MaxLength="2048" AutomationProperties.Name="粘贴网站网址" ToolTip="粘贴网站网址，例如 https://example.com" TextChanged="SourceWebsiteChanged" KeyDown="SourceWebsiteKeyDown"/><Button x:Name="AddSourceButton" Grid.Column="1" Content="识别并添加" Height="42" Style="{StaticResource Primary}" Click="RecognizeSourceClick" Margin="10,0,0,0" Padding="18,0"/></Grid>
+          <StackPanel Grid.Row="2" Margin="0,8,0,0">
+            <TextBlock Text="粘贴网址，验证可用后自动添加；也可在下方已适配目录中选择。" FontSize="12" Foreground="{StaticResource Muted}"/>
+            <Border x:Name="SourceProbePanel" Visibility="Collapsed" Style="{StaticResource GlassPanel}" Padding="14" Margin="0,12,0,0"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <StackPanel><TextBlock x:Name="SourceProbeMessage" TextWrapping="Wrap" FontSize="13"/><Expander Header="查看识别过程与样本" Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0"><TextBox x:Name="SourceProbeLog" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="110" VerticalScrollBarVisibility="Auto" FontSize="12" Padding="8"/></Expander></StackPanel>
+              <Button x:Name="StopSourceProbeButton" Grid.Column="1" Content="停止" Style="{StaticResource QuietButton}" VerticalAlignment="Top" Click="StopSourceProbeClick" Margin="12,0,0,0"/>
+            </Grid></Border>
+          </StackPanel>
+          <Grid Grid.Row="3" Margin="0,20,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="210"/><ColumnDefinition Width="140"/><ColumnDefinition Width="140"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal"><Button x:Name="AddedSourcesTab" Content="已添加" Style="{StaticResource NavigationTab}" Tag="selected" Click="ShowAddedSources"/><Button x:Name="CatalogSourcesTab" Content="已适配目录" Style="{StaticResource NavigationTab}" Margin="8,0,0,0" Click="ShowSourceCatalog"/></StackPanel>
+            <TextBox x:Name="SourceFindBox" Grid.Column="2" Style="{StaticResource CompactInput}" Height="34" AutomationProperties.Name="筛选来源名称或类别" ToolTip="搜索来源名称或资源类型" TextChanged="SourceFilterChanged"/>
+            <ComboBox x:Name="SourceAccessBox" Grid.Column="3" Style="{StaticResource CompactSelect}" Margin="8,0,0,0" SelectedIndex="0" SelectionChanged="SourceFilterSelectionChanged" AutomationProperties.Name="来源访问方式"><ComboBoxItem Content="全部访问方式"/><ComboBoxItem Content="公开 · 无需账号"/><ComboBoxItem Content="需要账号"/></ComboBox>
+            <ComboBox x:Name="SourceCategoryBox" Grid.Column="4" Style="{StaticResource CompactSelect}" Margin="8,0,0,0" SelectedIndex="0" SelectionChanged="SourceFilterSelectionChanged" AutomationProperties.Name="来源资源类型"><ComboBoxItem Content="全部资源"/><ComboBoxItem Content="电影"/><ComboBoxItem Content="剧集/视频"/><ComboBoxItem Content="动漫"/><ComboBoxItem Content="音乐"/><ComboBoxItem Content="书籍"/><ComboBoxItem Content="软件"/><ComboBoxItem Content="游戏"/><ComboBoxItem Content="其他"/><ComboBoxItem Content="未标明"/></ComboBox>
+            <Button x:Name="ReloadCatalogButton" Grid.Column="5" Content="刷新" Style="{StaticResource QuietButton}" Click="ReloadSourceCatalog" Margin="8,0,0,0" Visibility="Collapsed"/>
+          </Grid>
+          <Grid Grid.Row="4">
+            <ListBox x:Name="SourceList" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="12,4"/></Style></ListBox.ItemContainerStyle><ListBox.ItemTemplate><DataTemplate><Grid Margin="4,4"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="90"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"/><TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" Margin="0,6,20,0" ToolTip="{Binding Description}"/><TextBlock Text="{Binding StatusLabel}" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/></StackPanel><CheckBox Grid.Column="1" Content="启用" IsChecked="{Binding Enabled, Mode=OneWay}" Click="SourceRowToggle" Tag="{Binding}" VerticalAlignment="Center" AutomationProperties.Name="参与搜索"><CheckBox.Style><Style TargetType="CheckBox" BasedOn="{StaticResource CompactSwitch}"><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Website"><Setter Property="IsEnabled" Value="False"/><Setter Property="Content" Value="仅入口"/></DataTrigger></Style.Triggers></Style></CheckBox.Style></CheckBox><Button Grid.Column="2" Content="&#xE712;" FontFamily="Segoe MDL2 Assets" Style="{StaticResource QuietButton}" Width="36" Padding="0" Tag="{Binding}" Click="SourceRowMenu" ToolTip="来源操作" AutomationProperties.Name="来源操作"/></Grid></DataTemplate></ListBox.ItemTemplate></ListBox>
+            <ListBox x:Name="SourceCatalogList" Visibility="Collapsed" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="Padding" Value="12,4"/></Style></ListBox.ItemContainerStyle><ListBox.ItemTemplate><DataTemplate><Grid Margin="4,4"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="180"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Source.Name}" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="{Binding Source.CategoryLabel}" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding Source.Label}" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="12,0"/><Button Grid.Column="2" Content="{Binding ActionLabel}" IsEnabled="{Binding CanAdd}" Tag="{Binding Source}" Click="AddCatalogSource" Style="{StaticResource CompactButton}" Height="34" Padding="10,0"/></Grid></DataTemplate></ListBox.ItemTemplate></ListBox>
+            <TextBlock x:Name="SourcesEmptyText" Text="没有符合条件的来源" Visibility="Collapsed" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+          </Grid>
+          <StackPanel Grid.Row="5" Margin="0,14,0,0"><TextBlock x:Name="ConnectionStatus" TextWrapping="Wrap" Foreground="{StaticResource Accent}" FontSize="13"/><TextBlock Text="公开来源优先显示；已适配表示有接入规则，能否使用以实际测试为准。" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,0"/><Button x:Name="TestButton" Visibility="Collapsed" Click="TestSource"/></StackPanel>
+        </Grid>
+      </Grid>
+    </DockPanel>
+  </Border>
+</Window>

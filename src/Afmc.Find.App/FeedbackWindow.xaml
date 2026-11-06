@@ -1,0 +1,11 @@
+<Window x:Class="Afmc.Find.App.FeedbackWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Afmc.Find.App" Title="AFMC FIND · 反馈" Icon="Assets/afmc-find.ico" Width="440" Height="365" WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Style="{StaticResource {x:Type Window}}">
+ <WindowChrome.WindowChrome><WindowChrome CaptionHeight="34" ResizeBorderThickness="0" GlassFrameThickness="-1" UseAeroCaptionButtons="False"/></WindowChrome.WindowChrome>
+ <Border Background="#D0101215" BorderBrush="#30FFFFFF" BorderThickness="1"><DockPanel>
+  <Grid DockPanel.Dock="Top" Height="34"><TextBlock Text="{x:Static local:ProductInfo.Title}" Margin="16,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource Muted}"/><Button Content="&#xE8BB;" FontSize="11" Style="{StaticResource SettingsIconButton}" HorizontalAlignment="Right" IsCancel="True" WindowChrome.IsHitTestVisibleInChrome="True" AutomationProperties.Name="关闭反馈"/></Grid>
+  <StackPanel Margin="26,14,26,22"><Grid><Image Source="Assets/family-mark.png" Width="64" Height="64" Opacity="0.8" RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Right" Stretch="Uniform"/><StackPanel><TextBlock Text="反馈与联系" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="你的建议，让下一版更好用。" FontSize="12" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/></StackPanel></Grid>
+   <Border Style="{StaticResource GlassPanel}" Margin="0,20,0,16" Padding="14"><TextBlock x:Name="EmailText" Text="{x:Static local:ProductInfo.FeedbackEmail}" FontSize="16"/></Border>
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions><Button x:Name="CopyEmailButton" Content="复制邮箱" Click="CopyEmail"/><Button Grid.Column="2" Content="写邮件" Style="{StaticResource Primary}" Click="WriteEmail"/></Grid>
+   <Button Content="复制诊断信息" Click="CopyDiagnostics" Margin="0,10,0,0" Padding="10,6" FontSize="12" ToolTip="仅版本、系统和来源状态，不含搜索词或密钥"/><TextBlock x:Name="HintText" Text="将打开默认邮件应用，由你确认发送。" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+  </StackPanel>
+ </DockPanel></Border>
+</Window>

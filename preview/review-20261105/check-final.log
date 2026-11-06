@@ -1,0 +1,62 @@
+[
+  {
+    "name": "download and copy link share equal widths",
+    "passed": true
+  },
+  {
+    "name": "resource detail has no ellipsis action",
+    "passed": true
+  },
+  {
+    "name": "source explanation is in resource detail",
+    "passed": true
+  },
+  {
+    "name": "copy-link intent is explicit",
+    "passed": true
+  },
+  {
+    "name": "existing player retained without substitute preview player",
+    "passed": true
+  },
+  {
+    "name": "settings includes AFMC logo and family mark",
+    "passed": true
+  },
+  {
+    "name": "settings retains phrase and email",
+    "passed": true
+  },
+  {
+    "name": "add source focuses website field",
+    "passed": true
+  },
+  {
+    "name": "recognition reveals explicit add step",
+    "passed": true
+  },
+  {
+    "name": "add action updates demo added list",
+    "passed": true
+  },
+  {
+    "name": "catalog also exposes add actions",
+    "passed": true
+  },
+  {
+    "name": "main fits smaller window",
+    "passed": true
+  },
+  {
+    "name": "equal detail actions persist at minimum width",
+    "passed": true
+  },
+  {
+    "name": "settings footer accessible in small window",
+    "passed": true
+  },
+  {
+    "name": "no JavaScript runtime errors",
+    "passed": true
+  }
+]

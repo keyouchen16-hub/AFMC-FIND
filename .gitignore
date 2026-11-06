@@ -1,0 +1,30 @@
+.tools/
+**/bin/
+**/obj/
+artifacts/
+*.user
+*.tmp
+*.bak
+
+# Local credentials and private runtime data
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.key
+**/__pycache__/
+*.py[cod]
+.vs/
+
+# Raw captures may include personal data or remote content. Keep reports only.
+docs/evidence/
+evidence/
+*.dmp
+*.torrent
+*.fastresume
+
+# Generated concept exports; final product assets remain under src/.
+preview/**/*.png
+preview/**/*.jpg
+preview/**/*.webp

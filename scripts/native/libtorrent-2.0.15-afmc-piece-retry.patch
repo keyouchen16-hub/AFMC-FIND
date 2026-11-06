@@ -1,0 +1,178 @@
+--- a/bindings/python/CMakeLists.txt
++++ b/bindings/python/CMakeLists.txt
+@@ -73,7 +73,8 @@
+ )
+ 
+ if (MSVC)
+-	target_compile_options(python-libtorrent PRIVATE /bigobj)
++	target_compile_options(python-libtorrent PRIVATE /bigobj /MP4)
++	target_compile_definitions(python-libtorrent PRIVATE BOOST_PYTHON_STATIC_LIB BOOST_ALL_NO_LIB)
+ endif()
+ 
+ target_link_libraries(python-libtorrent
+--- a/bindings/python/src/torrent_handle.cpp
++++ b/bindings/python/src/torrent_handle.cpp
+@@ -522,6 +522,7 @@
+         .def("have_piece", _(&torrent_handle::have_piece))
+         .def("set_piece_deadline", _(&torrent_handle::set_piece_deadline)
+             , (arg("index"), arg("deadline"), arg("flags") = 0))
++        .def("afmc_retry_piece", _(&torrent_handle::afmc_retry_piece), (arg("index"), arg("endpoint"), arg("cooldown_ms")=8000))
+         .def("reset_piece_deadline", _(&torrent_handle::reset_piece_deadline), (arg("index")))
+         .def("clear_piece_deadlines", _(&torrent_handle::clear_piece_deadlines), (arg("index")))
+         .def("piece_availability", &piece_availability)
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -822,7 +822,7 @@
+ 
+ if (exceptions)
+ 	if (MSVC)
+-		target_compile_options(torrent-rasterbar PUBLIC /EHsc)
++		target_compile_options(torrent-rasterbar PUBLIC /EHsc /MP4)
+ 	else (MSVC)
+ 		target_compile_options(torrent-rasterbar PUBLIC -fexceptions)
+ 	endif (MSVC)
+--- a/include/libtorrent/peer_connection.hpp
++++ b/include/libtorrent/peer_connection.hpp
+@@ -643,6 +643,24 @@
+ 		// if force is true, the blocks is also freed from the piece
+ 		// picker, allowing another peer to request it immediately
+ 		void cancel_request(piece_block const& b, bool force = false);
++		// One bounded, per-connection/piece cooldown. No IP ban or disconnection.
++		piece_index_t afmc_avoided_piece() const
++		{ return aux::time_now() < m_afmc_retry_until ? m_afmc_retry_piece : piece_index_t{-1}; }
++		int afmc_retry_rate() const
++		{
++			int const current = m_statistics.download_payload_rate();
++			if (m_download_queue.empty() && m_request_queue.empty()
++				&& aux::time_now() - m_last_piece.get(m_connect) < seconds(30)
++				&& m_statistics.total_payload_download() >= 64 * 1024)
++				return std::max(current, m_download_rate_peak);
++			return current;
++		}
++		void afmc_avoid_piece(piece_index_t piece, int ms)
++		{ m_afmc_retry_piece = piece; m_afmc_retry_until = aux::time_now() + milliseconds(ms); }
++	private:
++		piece_index_t m_afmc_retry_piece{-1};
++		time_point m_afmc_retry_until = min_time();
++	public:
+ 		void send_block_requests();
+ 		void send_block_requests_impl();
+ 
+--- a/include/libtorrent/torrent.hpp
++++ b/include/libtorrent/torrent.hpp
+@@ -673,6 +673,7 @@
+ #ifndef TORRENT_DISABLE_STREAMING
+ 		void cancel_non_critical();
+ 		void set_piece_deadline(piece_index_t piece, int t, deadline_flags_t flags);
++		int afmc_retry_piece(piece_index_t piece, tcp::endpoint const& peer, int cooldown_ms);
+ 		void reset_piece_deadline(piece_index_t piece);
+ 		void clear_time_critical();
+ #endif // TORRENT_DISABLE_STREAMING
+--- a/include/libtorrent/torrent_handle.hpp
++++ b/include/libtorrent/torrent_handle.hpp
+@@ -436,6 +436,8 @@
+ 		// ``clear_piece_deadlines()`` removes deadlines on all pieces in
+ 		// the torrent. As if reset_piece_deadline() was called on all pieces.
+ 		void set_piece_deadline(piece_index_t index, int deadline, deadline_flags_t flags = {}) const;
++		// AFMC experimental: reassign <=4 outstanding blocks, retain connections.
++		int afmc_retry_piece(piece_index_t piece, tcp::endpoint const& peer, int cooldown_ms) const;
+ 		void reset_piece_deadline(piece_index_t index) const;
+ 		void clear_piece_deadlines() const;
+ 
+--- a/src/peer_connection.cpp
++++ b/src/peer_connection.cpp
+@@ -3595,6 +3595,7 @@
+ 	bool peer_connection::add_request(piece_block const& block
+ 		, request_flags_t const flags)
+ 	{
++		if (block.piece_index == afmc_avoided_piece()) return false;
+ 		TORRENT_ASSERT(is_single_thread());
+ 		INVARIANT_CHECK;
+ 
+--- a/src/request_blocks.cpp
++++ b/src/request_blocks.cpp
+@@ -170,6 +170,17 @@
+ 			bits = &fast_mask;
+ 		}
+ 
++		// Exclude only this peer's temporarily avoided piece before picking,
++		// so other wanted pieces can still use the connection.
++		typed_bitfield<piece_index_t> retry_mask;
++		auto const avoided = c.afmc_avoided_piece();
++		if (avoided >= piece_index_t{0} && avoided < bits->end_index())
++		{
++			retry_mask = *bits;
++			retry_mask.clear_bit(avoided);
++			bits = &retry_mask;
++		}
++
+ 		// picks the interesting pieces from this peer
+ 		// the integer is the number of pieces that
+ 		// should be guaranteed to be available for download
+--- a/src/torrent.cpp
++++ b/src/torrent.cpp
+@@ -5239,6 +5239,50 @@
+ 	}
+ 
+ #ifndef TORRENT_DISABLE_STREAMING
++	int torrent::afmc_retry_piece(piece_index_t const piece, tcp::endpoint const& endpoint, int cooldown_ms)
++	{
++		if (!valid_metadata() || !has_picker() || upload_mode() || is_paused()
++			|| piece < piece_index_t{0} || piece >= torrent_file().end_piece()
++			|| have_piece(piece)) return 0;
++		peer_connection* slow = nullptr;
++		for (auto* p : m_connections)
++			if (p->remote() == endpoint && !p->is_disconnecting()) { slow = p; break; }
++		if (!slow || slow->afmc_avoided_piece() == piece) return 0;
++		peer_connection* fast = nullptr;
++		int rate = std::max(16 * 1024, slow->statistics().download_payload_rate() * 3);
++		for (auto* p : m_connections)
++		{
++			if (p == slow || !p->can_request_time_critical() || !p->has_piece(piece)
++				|| p->afmc_avoided_piece() == piece) continue;
++			int const r = p->afmc_retry_rate();
++			if (r > rate) { fast = p; rate = r; }
++		}
++		// Never withdraw from the only observed supplier.
++		if (!fast) return 0;
++		auto pending = slow->download_queue();
++		int count = 0;
++		auto const incoming = slow->downloading_piece_progress();
++		for (auto const& item : pending)
++		{
++			auto const block = item.block;
++			if (count == 4) break;
++			if (block.piece_index != piece || item.not_wanted || item.timed_out
++				|| picker().is_downloaded(block) || picker().is_finished(block)
++				|| picker().num_peers(block) != 1) continue;
++			auto const& dq = fast->download_queue();
++			auto const& rq = fast->request_queue();
++			if (std::find_if(dq.begin(), dq.end(), aux::has_block(block)) != dq.end()
++				|| std::find_if(rq.begin(), rq.end(), aux::has_block(block)) != rq.end()) continue;
++			if (fast->add_request(block, peer_connection::time_critical | peer_connection::busy)) ++count;
++		}
++		if (count > 0)
++		{
++			slow->afmc_avoid_piece(piece, std::max(1000, std::min(cooldown_ms, 10000)));
++			fast->send_block_requests();
++		}
++		return count;
++	}
++
+ 	void torrent::cancel_non_critical()
+ 	{
+ 		// if we don't have a piece picker, there's nothing to cancel.
+--- a/src/torrent_handle.cpp
++++ b/src/torrent_handle.cpp
+@@ -945,6 +945,11 @@
+ #endif
+ 	}
+ 
++	int torrent_handle::afmc_retry_piece(piece_index_t piece, tcp::endpoint const& peer, int cooldown_ms) const
++	{
++		return sync_call_ret<int>(0, &torrent::afmc_retry_piece, piece, peer, cooldown_ms);
++	}
++
+ 	void torrent_handle::reset_piece_deadline(piece_index_t index) const
+ 	{
+ #ifndef TORRENT_DISABLE_STREAMING

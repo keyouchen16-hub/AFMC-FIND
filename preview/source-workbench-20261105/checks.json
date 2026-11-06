@@ -1,0 +1,74 @@
+{
+  "prototypeOnly": true,
+  "checks": [
+    {
+      "name": "added sources initially visible",
+      "passed": true
+    },
+    {
+      "name": "adapted catalog shares the source page",
+      "passed": true
+    },
+    {
+      "name": "account sources follow public sources",
+      "passed": true
+    },
+    {
+      "name": "account filter",
+      "passed": true
+    },
+    {
+      "name": "catalog addition appears in added list",
+      "passed": true
+    },
+    {
+      "name": "row toggle",
+      "passed": true
+    },
+    {
+      "name": "contextual actions replace global toolbar",
+      "passed": true
+    },
+    {
+      "name": "escape closes source menu",
+      "passed": true
+    },
+    {
+      "name": "detection never fabricates a working source",
+      "passed": true
+    },
+    {
+      "name": "evidence updates do not silently reorder results",
+      "passed": true
+    },
+    {
+      "name": "apply moves newly verified example ahead",
+      "passed": true
+    },
+    {
+      "name": "reduce-motion preference",
+      "passed": true
+    },
+    {
+      "name": "settings feedback email and exact brand phrase",
+      "passed": true
+    },
+    {
+      "name": "no horizontal overflow at 1060: sources",
+      "passed": true
+    },
+    {
+      "name": "no horizontal overflow at 1060: search",
+      "passed": true
+    },
+    {
+      "name": "settings footer fits smaller viewport",
+      "passed": true
+    },
+    {
+      "name": "no browser runtime errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

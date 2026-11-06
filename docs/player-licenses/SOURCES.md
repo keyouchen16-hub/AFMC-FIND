@@ -1,0 +1,9 @@
+# AFMC FIND optional playback components
+
+- MonoTorrent 3.0.2 — Alan McGovern and contributors, MIT. https://github.com/alanmcgovern/monotorrent/tree/e78faebd0aec117146cffccaaea987ab0629eec0
+- Mono.Nat 3.0.0 — https://github.com/alanmcgovern/Mono.Nat ; copyright and license retained in Mono.Nat-LICENSE.txt.
+- ReusableTasks 4.0.0 — https://github.com/alanmcgovern/ReusableTasks ; copyright and license retained in ReusableTasks-LICENSE.txt.
+- LibVLCSharp and LibVLCSharp.WPF 3.10.2 — VideoLAN, LGPL-2.1-or-later. Unmodified, dynamically linked assemblies. Corresponding source archive libvlcsharp-3.10.2-source.zip accompanies this directory (commit 3082c09ca955131c705fc4767fde03e9c4a14999). https://code.videolan.org/videolan/LibVLCSharp
+- Optional native runtime: VideoLAN.LibVLC.Windows 3.0.24, downloaded directly from https://api.nuget.org/v3-flatcontainer/videolan.libvlc.windows/3.0.24/videolan.libvlc.windows.3.0.24.nupkg . LibVLC library LGPL; VLC plugins may have GPL and other licenses. Original copyright belongs to their respective authors. License texts COPYING and COPYING.LIB accompany this notice. Corresponding source: https://download.videolan.org/pub/videolan/vlc/3.0.24/vlc-3.0.24.tar.xz and https://code.videolan.org/videolan/vlc/-/tree/3.0.24 . The native package is not contained in AFMC FIND's application update ZIP.
+
+The native library is separate from the executable, under %LOCALAPPDATA%/AFMC/Find-player/libvlc-3.0.24-x64. AFMC FIND does not impose a prohibition on modifying/replacing the LGPL components or reverse engineering for debugging those modifications. Managed DLLs remain separate, not merged or obfuscated. For modified native binaries the local manifest.json contains each relative file's SHA256; update that manifest to match your build before starting the app. Upstream DLLs themselves are not modified by AFMC FIND.

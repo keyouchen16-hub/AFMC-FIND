@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms><AssemblyName>AFMC.Find</AssemblyName><Version>0.8.20</Version><ApplicationIcon>Assets/afmc-find.ico</ApplicationIcon><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup><ItemGroup><ProjectReference Include="../Afmc.Find.Core/Afmc.Find.Core.csproj" /></ItemGroup><ItemGroup><Resource Include="Assets/afmc-find.png" /><Resource Include="Assets/author-mark.png" /><Resource Include="Assets/family-mark.png" /><Resource Include="Assets/afmc-find.ico" /></ItemGroup><ItemGroup><Using Remove="System.Windows.Forms" /><Using Remove="System.Drawing" /></ItemGroup><ItemGroup>
+  <PackageReference Include="LibVLCSharp.WPF" Version="3.10.2" />
+  <PackageReference Include="MonoTorrent" Version="3.0.2" />
+</ItemGroup><ItemGroup>
+  <Content Include="Streaming/stream_worker.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  <Content Include="../../.tools/libtorrent-runtime/**/*" Link="components/libtorrent/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+</ItemGroup><Target Name="RequireStreamingRuntime" BeforeTargets="PrepareForBuild">
+  <Error Condition="!Exists('../../.tools/libtorrent-runtime/manifest.json') Or !Exists('../../.tools/libtorrent-runtime/python.exe')" Text="Missing app-local streaming runtime. Run scripts/Prepare-StreamingRuntime.py and scripts/Verify-StreamingRuntime.ps1 before building." />
+</Target></Project>
+
+

@@ -1,0 +1,11 @@
+from pathlib import Path
+p=Path('src/Afmc.Find.App/MainWindow.xaml');s=p.read_text(encoding='utf-8-sig')
+s=s.replace('<ColumnDefinition Width="78"/><ColumnDefinition Width="54"/>','<ColumnDefinition Width="78"/><ColumnDefinition Width="88"/><ColumnDefinition Width="54"/>')
+s=s.replace('<TextBlock Grid.Column="2" Text="做种"','<TextBlock Grid.Column="2" Text="发布时间" Foreground="{StaticResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/><TextBlock Grid.Column="3" Text="做种"')
+s=s.replace('Text="{Binding Source}"','Text="{Binding SourceAndSpecs}"')
+s=s.replace('<TextBlock Grid.Column="3" Text="{Binding SeedsText}"','<TextBlock Grid.Column="3" Text="{Binding PublishedText}" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center" HorizontalAlignment="Right"/><TextBlock Grid.Column="4" Text="{Binding SeedsText}"')
+p.write_text(s,encoding='utf-8')
+p=Path('src/Afmc.Find.App/MainWindow.xaml.cs');s=p.read_text(encoding='utf-8-sig')
+s=s.replace('3 => filtered.OrderByDescending(r=>SiteSources.Rank(rankedQuery,r))','3 => filtered.OrderByDescending(r=>queryAliases.Select(q=>ResultPresentation.Score(q,r with {Seeders=null,Published=null},now)).DefaultIfEmpty(0).Max())')
+s=s.replace('CountText.Text = $"{visible.Count} / {all.Count} 条结果"; }','CountText.Text = favoritesView?$"{visible.Count} / {library?.Favorites.Count??0} 条收藏":$"{visible.Count} / {all.Count} 条结果"; }')
+p.write_text(s,encoding='utf-8')

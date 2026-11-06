@@ -1,0 +1,4 @@
+from pathlib import Path
+p=Path('src/Afmc.Find.App/MainWindow.xaml');s=p.read_text(encoding='utf-8').replace('6 个默认聚合源：海盗湾、Knaben、BitSearch、Nyaa、种子楼、Internet Archive。','7 个内置聚合源：海盗湾、Knaben、BitSearch、Nyaa、磁力熊、种子楼、Internet Archive。').replace('Nyaa、种子楼与 Internet Archive','Nyaa、磁力熊、种子楼与 Internet Archive').replace('（RSS 单批）','（RSS/磁力熊单批）');p.write_text(s,encoding='utf-8')
+for name in ['README.md','docs/PORTABLE.txt']:
+ p=Path(name);s=p.read_text(encoding='utf-8').replace('Nyaa、种子楼、Internet Archive 六源','Nyaa、磁力熊、种子楼、Internet Archive 七源').replace('Nyaa、种子楼、Internet Archive六源','Nyaa、磁力熊、种子楼、Internet Archive七源').replace('仅来自Internet Archive原条目','来自Internet Archive及磁力熊原条目').replace('图片来自Internet Archive原条目','图片来自Internet Archive及磁力熊原条目').replace('Nyaa RSS 单批最多75条。','Nyaa RSS 单批最多75条；磁力熊读取前8部影片的磁力版本。').replace('Nyaa RSS单批最多75条。','Nyaa RSS单批最多75条；磁力熊读取前8部影片的磁力版本。');p.write_text(s,encoding='utf-8')
